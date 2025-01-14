@@ -106,13 +106,19 @@ public class Sql {
         return simpleDb.selectBoolean(sqlBuilder.toString(), params);
     }
 
-    public void appendIn(String sql, Object... args) {
+    public Sql appendIn(String sql, Object... args) {
         String inClause = Arrays.stream(args)
                 .map(a -> "?")
                 .collect(Collectors.joining(", "));
+
         String replacedSql = sql.replaceAll("\\?", inClause);
         this.params.addAll(Arrays.stream(args).toList());
         this.sqlBuilder.append(replacedSql);
 
+        return this;
+    }
+
+    public List<Long> selectLongs() {
+        return simpleDb.selectLongs(sqlBuilder.toString(), params);
     }
 }
