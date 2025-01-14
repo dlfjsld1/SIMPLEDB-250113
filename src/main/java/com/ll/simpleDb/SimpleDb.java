@@ -4,10 +4,7 @@ import lombok.Setter;
 
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SimpleDb {
     // 데이터베이스 연결 정보를 저장할 변수들
@@ -41,30 +38,39 @@ public class SimpleDb {
     }
 
     // SQL 실행 메서드 (SELECT 결과가 boolean으로 반환되는 쿼리)
-    public boolean selectBoolean(String sql) {
+    public boolean selectBoolean(String sql, List<Object> params) {
         System.out.println("sql: " + sql);
-        return _run(sql, Boolean.class);
+        return _run(sql, Boolean.class, params);
     }
 
-    public String selectString(String sql) {
-        return _run(sql, String.class);
+    public String selectString(String sql, List<Object> params) {
+        return _run(sql, String.class, params);
     }
 
-    public Long selectLong(String sql) {
-        return _run(sql, Long.class);
+    public Long selectLong(String sql, List<Object> params) {
+        return _run(sql, Long.class, params);
     }
 
-    public LocalDateTime selectDateTime(String sql) {
-        return _run(sql, LocalDateTime.class);
+    public LocalDateTime selectDateTime(String sql, List<Object> params) {
+        return _run(sql, LocalDateTime.class, params);
     }
 
-    public Map<String, Object> selectRow(String sql) {
-        return _run(sql, Map.class);
+    public Map<String, Object> selectRow(String sql, List<Object> params) {
+        return _run(sql, Map.class, params);
     }
 
 
-    public List<Map<String, Object>> selectRows(String sql) {
-        return _run(sql, List.class);
+    public List<Map<String, Object>> selectRows(String sql, List<Object> params) {
+        return _run(sql, List.class, params);
+    }
+
+
+    public int delete(String sql, List<Object> params) {
+        return _run(sql, Integer.class, params);
+    }
+
+    public int update(String sql, List<Object> params) {
+        return _run(sql, Integer.class, params);
     }
 
     // Sql 객체 생성
@@ -72,19 +78,19 @@ public class SimpleDb {
         return new Sql(this);
     }
 
-    public void run(String sql, Object... params) {
-        _run(sql, Integer.class, params);
+    public int run(String sql, Object... params) {
+        return _run(sql, Integer.class, Arrays.stream(params).toList());
     }
     // SQL 실행 메서드 (INSERT, UPDATE, DELETE 등 결과를 반환하지 않는 쿼리)
     // type - 0: boolean 1: String
-    public <T> T _run(String sql, Class<T> cls, Object... params) {
+    public <T> T _run(String sql, Class<T> cls, List<Object> params) {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             if (sql.startsWith("SELECT")) {
                 ResultSet rs = stmt.executeQuery();
                 return parseResultSet(rs, cls);
             }
             // PreparedStatement를 사용하여 SQL 쿼리 실행
-            setParams(stmt,params);//파라미터 설정
+            setParams(stmt, params);//파라미터 설정
             return cls.cast(stmt.executeUpdate()); // 실제 반영된 로우 수 반환
         } catch (SQLException e) {
             throw new RuntimeException("SQL 실행 실패: " + e.getMessage());
@@ -136,10 +142,10 @@ public class SimpleDb {
     }
 
     // PreparedStatement에 파라미터 바인딩 메서드
-    private void setParams(PreparedStatement stmt, Object... params) throws SQLException {
+    private void setParams(PreparedStatement stmt, List<Object> params) throws SQLException {
         // 가변 인자(params)로 받은 값들을 PreparedStatement의 '?' 위치에 순서대로 설정
-        for (int i = 0; i < params.length; i++) {
-            stmt.setObject(i + 1, params[i]); // '?' 위치는 1부터 시작
+        for (int i = 0; i < params.size(); i++) {
+            stmt.setObject(i + 1, params.get(i)); // '?' 위치는 1부터 시작
         }
     }
 
