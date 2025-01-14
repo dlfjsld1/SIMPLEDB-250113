@@ -81,53 +81,58 @@ public class SimpleDb {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             if (sql.startsWith("SELECT")) {
                 ResultSet rs = stmt.executeQuery();
-
-                if (cls == Boolean.class) {
-                    rs.next();
-                    return cls.cast(rs.getBoolean(1));
-                } else if (cls == String.class) {
-                    rs.next();
-                    return cls.cast(rs.getString(1));
-                } else if (cls == Long.class) {
-                    rs.next();
-                    return cls.cast(rs.getLong(1));
-                } else if (cls == LocalDateTime.class) {
-                    rs.next();
-                    return cls.cast(rs.getTimestamp(1).toLocalDateTime());
-                } else if (cls == Map.class) {
-                    rs.next();
-                    ResultSetMetaData metaData = rs.getMetaData();
-
-                    int columnCount = metaData.getColumnCount();
-                    Map<String, Object> row = new HashMap<>();
-                    for (int i = 1; i <= columnCount; i++) {
-                        String cname = metaData.getColumnName(i);
-                        row.put(cname, rs.getObject(i));
-                    }
-                    //아래에서 cast는 캐스팅을 하는데 캐스팅이란 타입을 변환하는 것을 말한다.
-                    return cls.cast(row);
-                } else if(cls == List.class) {
-                    List<Map<String, Object>> rows = new ArrayList<>();
-                    while(rs.next()) {
-                        ResultSetMetaData metaData = rs.getMetaData();
-                        int columnCount = metaData.getColumnCount();
-                        Map<String, Object> row = new HashMap<>();
-                        for (int i = 1; i <= columnCount; i++) {
-                            String cname = metaData.getColumnName(i);
-                            row.put(cname, rs.getObject(i));
-                        }
-                        rows.add(row);
-                    }
-                    return cls.cast(rows);
-                }
+                return parseResultSet(rs, cls);
             }
             // PreparedStatement를 사용하여 SQL 쿼리 실행
             setParams(stmt,params);//파라미터 설정
             return cls.cast(stmt.executeUpdate()); // 실제 반영된 로우 수 반환
-
         } catch (SQLException e) {
             throw new RuntimeException("SQL 실행 실패: " + e.getMessage());
         }
+    }
+
+    private <T> T parseResultSet(ResultSet rs, Class<T> cls) throws SQLException {
+        if (cls == Boolean.class) {
+            rs.next();
+            return cls.cast(rs.getBoolean(1));
+        } else if (cls == String.class) {
+            rs.next();
+            return cls.cast(rs.getString(1));
+        } else if (cls == Long.class) {
+            rs.next();
+            return cls.cast(rs.getLong(1));
+        } else if (cls == LocalDateTime.class) {
+            rs.next();
+            return cls.cast(rs.getTimestamp(1).toLocalDateTime());
+        } else if (cls == Map.class) {
+            rs.next();
+
+            Map<String, Object> row = rsRowToMap(rs);
+
+            //아래에서 cast는 캐스팅을 하는데 캐스팅이란 타입을 변환하는 것을 말한다.
+            return cls.cast(row);
+        } else if(cls == List.class) {
+            List<Map<String, Object>> rows = new ArrayList<>();
+            while(rs.next()) {
+                Map<String, Object> row = rsRowToMap(rs);
+                rows.add(row);
+            }
+            return cls.cast(rows);
+        }
+        throw new RuntimeException("정의되지 않은 타입이 반환됨.");
+    }
+
+    private Map<String, Object> rsRowToMap(ResultSet rs) throws SQLException {
+        ResultSetMetaData metaData = rs.getMetaData();
+        int columnCount = metaData.getColumnCount();
+
+        Map<String, Object> row = new HashMap<>();
+
+        for (int i = 1; i <= columnCount; i++) {
+            String cname = metaData.getColumnName(i);
+            row.put(cname, rs.getObject(i));
+        }
+        return row;
     }
 
     // PreparedStatement에 파라미터 바인딩 메서드
