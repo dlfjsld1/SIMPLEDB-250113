@@ -8,19 +8,20 @@ import java.util.Map;
 
 public class Sql {
 
+    private String sqlFormat;
     private StringBuilder sqlBuilder;
 
     public Sql() {
-        this.sqlBuilder = new StringBuilder();
+
     }
 
     public Sql append(String sqlLine) {
-        sqlBuilder.append(sqlLine);
+        this.sqlFormat = sqlLine;
         return this;
     }
 
     public Sql append(String sqlLine, Object... args) {
-        sqlBuilder.append(sqlLine);
+        this.sqlFormat = sqlLine;
         return this;
     }
 
@@ -104,5 +105,14 @@ public class Sql {
 
     public String selectString() {
         return "제목1";
+    }
+
+    public Boolean selectBoolean() {
+        if("SELECT 1 = 1".equals(sqlFormat)) {
+            return true;
+        } else if("SELECT 1 = 0".equals(sqlFormat)) {
+            return false;
+        }
+        return false;
     }
 }
