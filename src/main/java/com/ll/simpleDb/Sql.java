@@ -8,20 +8,23 @@ import java.util.Map;
 
 public class Sql {
 
-    private String sqlFormat;
-    private StringBuilder sqlBuilder;
+    private final SimpleDb simpleDb;
+    private final StringBuilder sqlBuilder;
 
-    public Sql() {
-
+    public Sql(SimpleDb simpleDb) {
+       this.sqlBuilder  = new StringBuilder();
+        this.simpleDb = simpleDb;
     }
 
     public Sql append(String sqlLine) {
-        this.sqlFormat = sqlLine;
+        this.sqlBuilder.append(sqlLine);
+        this.sqlBuilder.append(" ");
         return this;
     }
 
     public Sql append(String sqlLine, Object... args) {
-        this.sqlFormat = sqlLine;
+        this.sqlBuilder.append(sqlLine);
+        this.sqlBuilder.append(" ");
         return this;
     }
 
@@ -38,15 +41,6 @@ public class Sql {
     }
 
     public List<Map<String, Object>> selectRows() {
-
-//        assertThat(articleRow.get("id")).isEqualTo(id);
-//        assertThat(articleRow.get("title")).isEqualTo("제목%d".formatted(id));
-//        assertThat(articleRow.get("body")).isEqualTo("내용%d".formatted(id));
-//        assertThat(articleRow.get("createdDate")).isInstanceOf(LocalDateTime.class);
-//        assertThat(articleRow.get("createdDate")).isNotNull();
-//        assertThat(articleRow.get("modifiedDate")).isInstanceOf(LocalDateTime.class);
-//        assertThat(articleRow.get("modifiedDate")).isNotNull();
-//        assertThat(articleRow.get("isBlind")).isEqualTo(false);
 
         List<Map<String, Object>> rows = new ArrayList<>();
 
@@ -78,41 +72,36 @@ public class Sql {
         rows.add(row2);
         rows.add(row3);
 
-        return rows;
+        return simpleDb.selectRows(sqlBuilder.toString());
     }
 
     public Map<String, Object> selectRow() {
+            return simpleDb.selectRow(sqlBuilder.toString());
+//        Map<String, Object> row1 = new HashMap<>();
+//        row1.put("id", 1L);
+//        row1.put("title", "제목1");
+//        row1.put("body", "내용1");
+//        row1.put("createdDate", LocalDateTime.now());
+//        row1.put("modifiedDate", LocalDateTime.now());
+//        row1.put("isBlind", false);
 
-        Map<String, Object> row1 = new HashMap<>();
-        row1.put("id", 1L);
-        row1.put("title", "제목1");
-        row1.put("body", "내용1");
-        row1.put("createdDate", LocalDateTime.now());
-        row1.put("modifiedDate", LocalDateTime.now());
-        row1.put("isBlind", false);
-
-        return row1;
+//        return row1;
     }
 
     public LocalDateTime selectDatetime() {
-        LocalDateTime localDateTime = LocalDateTime.now();
-        return localDateTime;
+        return simpleDb.selectDateTime(sqlBuilder.toString());
     }
 
     public Long selectLong() {
-        return 1L;
+        return simpleDb.selectLong(sqlBuilder.toString());
     }
 
     public String selectString() {
-        return "제목1";
+        return simpleDb.selectString(sqlBuilder.toString());
+
     }
 
     public Boolean selectBoolean() {
-        if("SELECT 1 = 1".equals(sqlFormat)) {
-            return true;
-        } else if("SELECT 1 = 0".equals(sqlFormat)) {
-            return false;
-        }
-        return false;
+        return simpleDb.selectBoolean(sqlBuilder.toString());
     }
 }
