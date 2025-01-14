@@ -2,6 +2,7 @@ package com.ll.simpleDb;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Sql {
 
@@ -29,7 +30,7 @@ public class Sql {
     }
 
     public long insert() {
-        return 1;
+        return simpleDb.insert(sqlBuilder.toString(), params);
     }
 
     public int update() {
@@ -103,5 +104,15 @@ public class Sql {
 
     public Boolean selectBoolean() {
         return simpleDb.selectBoolean(sqlBuilder.toString(), params);
+    }
+
+    public void appendIn(String sql, Object... args) {
+        String inClause = Arrays.stream(args)
+                .map(a -> "?")
+                .collect(Collectors.joining(", "));
+        String replacedSql = sql.replaceAll("\\?", inClause);
+        this.params.addAll(Arrays.stream(args).toList());
+        this.sqlBuilder.append(replacedSql);
+
     }
 }

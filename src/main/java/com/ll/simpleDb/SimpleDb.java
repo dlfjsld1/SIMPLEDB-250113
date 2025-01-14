@@ -73,6 +73,10 @@ public class SimpleDb {
         return _run(sql, Integer.class, params);
     }
 
+    public long insert(String sql, List<Object> params) {
+        return _run(sql, Long.class, params);
+    }
+
     // Sql 객체 생성
     public Sql genSql() {
         return new Sql(this);
@@ -84,13 +88,26 @@ public class SimpleDb {
     // SQL 실행 메서드 (INSERT, UPDATE, DELETE 등 결과를 반환하지 않는 쿼리)
     // type - 0: boolean 1: String
     public <T> T _run(String sql, Class<T> cls, List<Object> params) {
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            setParams(stmt, params);//파라미터 설정
             if (sql.startsWith("SELECT")) {
                 ResultSet rs = stmt.executeQuery();
                 return parseResultSet(rs, cls);
             }
+            if(sql.startsWith("INSERT")) {
+                if(cls == Long.class) {
+                    stmt.executeUpdate();
+                    ResultSet rs = stmt.getGeneratedKeys();
+                    if(rs.next()) {
+                        return cls.cast(rs.getLong(1));
+                    }
+                }
+                if(cls == Integer.class) {
+                    return cls.cast(stmt.executeUpdate());
+                }
+            }
+
             // PreparedStatement를 사용하여 SQL 쿼리 실행
-            setParams(stmt, params);//파라미터 설정
             return cls.cast(stmt.executeUpdate()); // 실제 반영된 로우 수 반환
         } catch (SQLException e) {
             throw new RuntimeException("SQL 실행 실패: " + e.getMessage());
@@ -148,6 +165,7 @@ public class SimpleDb {
             stmt.setObject(i + 1, params.get(i)); // '?' 위치는 1부터 시작
         }
     }
+
 
 
 }
