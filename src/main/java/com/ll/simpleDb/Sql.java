@@ -41,38 +41,15 @@ public class Sql {
         return simpleDb.delete(sqlBuilder.toString(), params);
     }
 
+    public List<Article> selectRows(Class<?> cls) {
+        return simpleDb.selectRows(sqlBuilder.toString(), params, cls);
+//        return simpleDb.selectRows(sqlBuilder.toString(), params)
+//                .stream()
+//                .map(Article::fromMap)
+//                .toList();
+    }
+
     public List<Map<String, Object>> selectRows() {
-
-        List<Map<String, Object>> rows = new ArrayList<>();
-
-        Map<String, Object> row1 = new HashMap<>();
-        row1.put("id", 1L);
-        row1.put("title", "제목1");
-        row1.put("body", "내용1");
-        row1.put("createdDate", LocalDateTime.now());
-        row1.put("modifiedDate", LocalDateTime.now());
-        row1.put("isBlind", false);
-
-        Map<String, Object> row2 = new HashMap<>();
-        row2.put("id", 2L);
-        row2.put("title", "제목2");
-        row2.put("body", "내용2");
-        row2.put("createdDate", LocalDateTime.now());
-        row2.put("modifiedDate", LocalDateTime.now());
-        row2.put("isBlind", false);
-
-        Map<String, Object> row3 = new HashMap<>();
-        row3.put("id", 3L);
-        row3.put("title", "제목3");
-        row3.put("body", "내용3");
-        row3.put("createdDate", LocalDateTime.now());
-        row3.put("modifiedDate", LocalDateTime.now());
-        row3.put("isBlind", false);
-
-        rows.add(row1);
-        rows.add(row2);
-        rows.add(row3);
-
         return simpleDb.selectRows(sqlBuilder.toString(), params);
     }
 

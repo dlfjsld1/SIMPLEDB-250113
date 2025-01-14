@@ -59,11 +59,16 @@ public class SimpleDb {
         return _run(sql, Map.class, params);
     }
 
-
     public List<Map<String, Object>> selectRows(String sql, List<Object> params) {
         return _run(sql, List.class, params);
     }
 
+    public List<Article> selectRows(String sql, List<Object> params, Class<?> cls) {
+        return selectRows(sql, params)
+                .stream()
+                .map(Article::fromMap)
+                .toList();
+    }
 
     public int delete(String sql, List<Object> params) {
         return _run(sql, Integer.class, params);
@@ -169,6 +174,7 @@ public class SimpleDb {
 
     public List<Long> selectLongs(String sql, List<Object> params) {
         List<Map<String, Object>> maps = selectRows(sql, params);
+        //아래 코드를 해석하자면 maps를 스트림으로 변환하고, 각 맵의 첫번째 값을 Long으로 변환하고, 리스트로 변환한다.
         return maps.stream()
                 .map(m -> (Long)m.values().iterator().next())
                 .toList();
