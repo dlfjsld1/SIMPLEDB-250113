@@ -11,7 +11,7 @@ public class SimpleDb {
     private String dbUrl;  // JDBC URL (데이터베이스 주소)
     private String dbUser; // 데이터베이스 사용자 이름
     private String dbPassword; // 데이터베이스 비밀번호
-    private Connection connection; // 데이터베이스 연결 객체
+    private Map<String, Connection> connections; // 데이터베이스 연결 객체
     @Setter
     private boolean devMode = false; // 개발 모드 활성화 여부 (로그 출력 등에 사용)
 
@@ -22,19 +22,36 @@ public class SimpleDb {
         this.dbUrl = "jdbc:mysql://" + host + ":3306/" + dbName;
         this.dbUser = user; // 사용자 이름 설정
         this.dbPassword = password; // 비밀번호 설정
+        connections = new HashMap<>();
 
-        // 데이터베이스 연결 시도
-        try {
-            // DriverManager를 사용하여 데이터베이스 연결을 얻어옴
-            connection = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
-            // 개발 모드가 활성화되어 있다면 연결 성공 메시지 출력
-            if (devMode) {
-                System.out.println("데이터베이스에 성공적으로 연결되었습니다.");
+    }
+
+    //getCurrentThreadConnection 메서드를 설명하자면 다음과 같다.
+    //현재 스레드의 이름을 키로 사용하여 connections 맵에서 해당 스레드에 대한 Connection 객체를 가져온다.
+    //만약 해당 스레드에 대한 Connection 객체가 없다면, 새로운 Connection 객체를 생성하고 connections 맵에 추가한다.
+    //그리고 해당 Connection 객체를 반환한다.
+    //Thread.currentThread().getName()를 자세히 설명하자면
+    //Thread.currentThread()는 현재 실행 중인 스레드를 나타내는 Thread 객체를 반환한다.
+    //Thread 객체는 getName() 메서드를 제공하며, 이 메서드는 해당 스레드의 이름을 문자열로 반환한다.
+    //스레드란, 프로그램 내에서 실행되는 독립적인 실행 흐름을 말한다.
+    //Thread 객체를 간단히 설명하자면 스레드를 생성하고 관리하는 데 사용되는 클래스이다.
+    //Thread 객체를 사용하는 때는 주로 동시에 여러 작업을 수행해야 할 때이다.
+    private Connection getCurrentThreadConnection() {
+        try{
+            String currentThreadName = Thread.currentThread().getName();
+            Connection conn = connections.get(currentThreadName);
+            System.out.println("ThreadName: " + currentThreadName);
+
+            if(conn == null) {
+                Connection currentThreadConn = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+                connections.put(currentThreadName, currentThreadConn);
+
+                return currentThreadConn;
             }
-        } catch (SQLException e) {
-            // 데이터베이스 연결 실패 시 예외 발생 (프로그램 종료)
-            throw new RuntimeException("데이터베이스 연결 실패: " + e.getMessage());
-        }
+            return conn;
+            } catch(SQLException e) {
+                throw new RuntimeException(e);
+            }
     }
 
     // SQL 실행 메서드 (SELECT 결과가 boolean으로 반환되는 쿼리)
@@ -57,6 +74,10 @@ public class SimpleDb {
 
     public Map<String, Object> selectRow(String sql, List<Object> params) {
         return _run(sql, Map.class, params);
+    }
+
+    public <T> T selectRow(String sql, List<Object> params, Class<T> cls) {
+        return selectRows(sql, params, cls).getFirst();
     }
 
     public List<Map<String, Object>> selectRows(String sql, List<Object> params) {
@@ -91,6 +112,7 @@ public class SimpleDb {
     // SQL 실행 메서드 (INSERT, UPDATE, DELETE 등 결과를 반환하지 않는 쿼리)
     // type - 0: boolean 1: String
     public <T> T _run(String sql, Class<T> cls, List<Object> params) {
+        Connection connection = getCurrentThreadConnection();
         try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             setParams(stmt, params);//파라미터 설정
             if (sql.startsWith("SELECT")) {
@@ -176,5 +198,43 @@ public class SimpleDb {
         return maps.stream()
                 .map(m -> (Long)m.values().iterator().next())
                 .toList();
+    }
+
+    public void close() {
+        try {
+            Connection connection = getCurrentThreadConnection();
+            connection.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void startTransaction() {
+        try {
+            Connection connection = getCurrentThreadConnection();
+            connection.setAutoCommit(false);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void rollback() {
+        try {
+            Connection connection = getCurrentThreadConnection();
+            connection.rollback();
+            connection.setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void commit() {
+        try {
+            Connection connection = getCurrentThreadConnection();
+            connection.commit();
+            connection.setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
